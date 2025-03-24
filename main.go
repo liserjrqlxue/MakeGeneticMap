@@ -89,43 +89,7 @@ func main() {
 			slog.Error("载体不存在", "序号", data["序号"], "载体", data["载体"])
 			continue
 		}
-		var e1start, e1end, e2start, e2end int
-		e1seq := strings.ToUpper(data["酶切位点A.1"])
-		e1len := len(e1seq)
-		for j := range len(carrierSeq) - e1len {
-			tseq := carrierSeq[j : j+e1len]
-			if tseq == e1seq {
-				e1start = j
-				e1end = j + e1len
-				break
-			}
-		}
-		e2seq := strings.ToUpper(data["酶切位点B.1"])
-		e2len := len(e2seq)
-		for j := range len(carrierSeq) - e2len {
-			tseq := carrierSeq[j : j+e2len]
-			if tseq == e2seq {
-				e2start = j
-				e2end = j + e2len
-				break
-			}
-		}
-		if e1len > 0 && e2len > 0 {
-			if e2start > e1len {
-				data["E1起点"] = strconv.Itoa(e1start)
-				data["E1终点"] = strconv.Itoa(e1end)
-				data["E2起点"] = strconv.Itoa(e2start)
-				data["E2终点"] = strconv.Itoa(e2end)
-				data["图谱"] = carrierSeq[:e1end] + data["序列"] + carrierSeq[e2start:]
-				plasmid.Sequence = data["图谱"]
-			} else {
-				slog.Info("酶切位置错误", "序号", data["序号"], "e1start", e1start, "e1end", e1end, "e2start", e2start, "e2end", e2end)
-				plasmid.Note = "酶切位置错误"
-			}
-		} else {
-			slog.Info("酶切位置找不到", "序号", data["序号"], "e1start", e1start, "e1end", e1end, "e2start", e2start, "e2end", e2end)
-			plasmid.Note = "酶切位置找不到"
-		}
+		plasmid.Update(data, carrierSeq)
 	}
 
 	// output
@@ -189,4 +153,45 @@ type Plasmid struct {
 	Name     string
 	Sequence string
 	Note     string
+}
+
+func (plasmid *Plasmid) Update(data map[string]string, carrierSeq string) {
+	var e1start, e1end, e2start, e2end int
+
+	e1seq := strings.ToUpper(data["酶切位点A.1"])
+	e1start = FindIndex(carrierSeq, e1seq)
+	e1end = e1start + len(e1seq)
+
+	e2seq := strings.ToUpper(data["酶切位点B.1"])
+	e2start = FindIndex(carrierSeq, e2seq)
+	e2end = e2start + len(e2seq)
+
+	if e1start > 0 && e2start > 0 {
+		if e2start > e1end {
+			data["E1起点"] = strconv.Itoa(e1start)
+			data["E1终点"] = strconv.Itoa(e1end)
+			data["E2起点"] = strconv.Itoa(e2start)
+			data["E2终点"] = strconv.Itoa(e2end)
+			data["图谱"] = carrierSeq[:e1end] + data["序列"] + carrierSeq[e2start:]
+			plasmid.Sequence = data["图谱"]
+		} else {
+			slog.Info("酶切位置错误", "序号", data["序号"], "e1start", e1start, "e1end", e1end, "e2start", e2start, "e2end", e2end)
+			plasmid.Note = "酶切位置错误"
+		}
+	} else {
+		slog.Info("酶切位置找不到", "序号", data["序号"], "e1start", e1start, "e1end", e1end, "e2start", e2start, "e2end", e2end)
+		plasmid.Note = "酶切位置找不到"
+	}
+}
+
+// -1 for not found
+func FindIndex(query, target string) int {
+	l := len(target)
+	for i := range len(query) - l {
+		str := query[i : i+l]
+		if str == target {
+			return i
+		}
+	}
+	return -1
 }
