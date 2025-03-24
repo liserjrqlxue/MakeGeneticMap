@@ -27,7 +27,7 @@ var (
 )
 
 var (
-	title1 = []string{
+	GeneInfoTitle = []string{
 		"序号",
 		"基因内名",
 		"基因名称",
@@ -43,12 +43,12 @@ var (
 		"载体名称",
 		"载体序列",
 	}
-	title3 = []string{
+
+	CreateSheet      = "构建完成"
+	CreateSheetTitle = []string{
 		"质粒名称",
 		"序列",
 	}
-
-	CreateSheet = "构建完成"
 )
 
 func main() {
@@ -61,32 +61,18 @@ func main() {
 		*output = strings.TrimSuffix(*input, "xlsx") + "构建完成"
 	}
 
+	// load Input
 	xlsx := simpleUtil.HandleError(excelize.OpenFile(*input))
 	carrierInfo := LoadCarrierList(xlsx, "载体清单", CarrierListTitle)
+	geneInfos := LoadGeneInfo(xlsx, "Sheet1", GeneInfoTitle)
 
+	// create Output
 	var FA = osUtil.Create(*output + ".fasta")
 	defer simpleUtil.DeferClose(FA)
 	xlsx.NewSheet(CreateSheet)
 
-	slice := simpleUtil.HandleError(xlsx.GetRows("Sheet1"))
-	for i := range slice {
-		row := slice[i]
-		if i == 0 {
-			if len(row) < len(title1) {
-				log.Fatalf("title leak column:[%+v]", row)
-			}
-			for i := range title1 {
-				if row[i] != title1[i] {
-					log.Fatalf("title1 error:%d[%s]vs[%s]", i+1, row[i], title1[i])
-				}
-			}
-			continue
-		}
-
-		data := make(map[string]string)
-		for j := range title1 {
-			data[title1[j]] = row[j]
-		}
+	for i := range geneInfos {
+		data := geneInfos[i]
 		carrierSeq, ok := carrierInfo[data["载体"]]
 		if !ok {
 			log.Fatalf("载体不存在:[%s]", data["载体"])
@@ -150,5 +136,28 @@ func LoadCarrierList(xlsx *excelize.File, sheet string, title []string) map[stri
 		carrierInfo[row[0]] = row[1]
 	}
 	return carrierInfo
+}
 
+func LoadGeneInfo(xlsx *excelize.File, sheet string, title []string) (dataArray []map[string]string) {
+	slice := simpleUtil.HandleError(xlsx.GetRows(sheet))
+	for i := range slice {
+		row := slice[i]
+		if i == 0 { // 校验表头
+			if len(row) < len(title) {
+				log.Fatalf("title leak column:[%+v]", row)
+			}
+			for i := range title {
+				if row[i] != title[i] {
+					log.Fatalf("title1 error:%d[%s]vs[%s]", i+1, row[i], title[i])
+				}
+			}
+			continue
+		}
+		data := make(map[string]string)
+		for j := range title {
+			data[title[j]] = row[j]
+		}
+		dataArray = append(dataArray, data)
+	}
+	return
 }
