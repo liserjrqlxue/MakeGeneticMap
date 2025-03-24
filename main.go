@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -70,12 +72,21 @@ func main() {
 	var FA = osUtil.Create(*output + ".fasta")
 	defer simpleUtil.DeferClose(FA)
 	xlsx.NewSheet(CreateSheet)
+	xlsx.SetSheetRow(CreateSheet, "A1", &CreateSheetTitle)
+	var plasmids []*Plasmid
 
 	for i := range geneInfos {
 		data := geneInfos[i]
+		plasmid := &Plasmid{
+			Name: fmt.Sprintf("%s-%s-%s", data["基因内名"], data["基因名称"], data["载体"]),
+		}
+		plasmids = append(plasmids, plasmid)
+
 		carrierSeq, ok := carrierInfo[data["载体"]]
 		if !ok {
-			log.Fatalf("载体不存在:[%s]", data["载体"])
+			plasmid.Name = "载体不存在"
+			slog.Error("载体不存在", "序号", data["序号"], "载体", data["载体"])
+			continue
 		}
 		var e1start, e1end, e2start, e2end int
 		e1seq := strings.ToUpper(data["酶切位点A.1"])
@@ -105,14 +116,18 @@ func main() {
 				data["E2起点"] = strconv.Itoa(e2start)
 				data["E2终点"] = strconv.Itoa(e2end)
 				data["图谱"] = carrierSeq[:e1end] + data["序列"] + carrierSeq[e2start:]
+				plasmid.Sequence = data["图谱"]
 			} else {
 				log.Fatalf("酶切位置错误:[%d,%d],[%d,%d]", e1start, e1end, e2start, e2end)
+				slog.Info("酶切位置错误", "序号", data["序号"], "e1start", e1start, "e1end", e1end, "e2start", e2start, "e2end", e2end)
 			}
 		} else {
-			log.Fatalf("酶切位置找不到:[%d,%d],[%d,%d]", e1start, e1end, e2start, e2end)
+			slog.Info("酶切位置找不到", "序号", data["序号"], "e1start", e1start, "e1end", e1end, "e2start", e2start, "e2end", e2end)
 		}
-
-		fmtUtil.Fprintf(FA, ">%s-%s-%s\n%s\n", data["基因内名"], data["基因名称"], data["载体"], data["图谱"])
+	}
+	for i, p := range plasmids {
+		fmtUtil.Fprintf(FA, ">%s\n%s\n", p.Name, p.Sequence)
+		xlsx.SetSheetRow(CreateSheet, "A"+strconv.Itoa(i+2), &[]string{p.Name, p.Sequence, p.Note})
 	}
 }
 
@@ -138,6 +153,7 @@ func LoadCarrierList(xlsx *excelize.File, sheet string, title []string) map[stri
 	return carrierInfo
 }
 
+// 读取基因信息
 func LoadGeneInfo(xlsx *excelize.File, sheet string, title []string) (dataArray []map[string]string) {
 	slice := simpleUtil.HandleError(xlsx.GetRows(sheet))
 	for i := range slice {
@@ -160,4 +176,10 @@ func LoadGeneInfo(xlsx *excelize.File, sheet string, title []string) (dataArray 
 		dataArray = append(dataArray, data)
 	}
 	return
+}
+
+type Plasmid struct {
+	Name     string
+	Sequence string
+	Note     string
 }
