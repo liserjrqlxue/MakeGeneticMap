@@ -152,7 +152,7 @@ func LoadCarrierList(xlsx *excelize.File, sheet string, title []string) map[stri
 			}
 			continue
 		}
-		carrierInfo[row[0]] = row[1]
+		carrierInfo[row[0]] = strings.ToUpper(row[1])
 	}
 	return carrierInfo
 }
