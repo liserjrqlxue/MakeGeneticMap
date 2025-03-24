@@ -51,3 +51,24 @@ FASTA
 3. `carrier[:E1]+Gene+carrier[E2:]`
     - 注意酶切位点起止坐标
 4. 输出载体序列和FASTA
+
+## 实现
+
+1. flag解析
+    - input
+    - output
+2. Load Input
+    - LoadCarrierList
+    - LoadGeneInfo
+3. Create Output
+    - FA: output.fasta
+    - NewSheet: CreateSheet
+4. range geneInfos
+    - new Plasmid
+    - append to plasmids
+    - get carrierSeq
+    - plasmid.Update
+5. Write Output
+    - range plasmids
+        - FA: write p when p.Note empty
+    - xlsx.SaveAs output.xlsx

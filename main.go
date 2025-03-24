@@ -76,6 +76,7 @@ func main() {
 	xlsx.SetSheetRow(CreateSheet, "A1", &CreateSheetTitle)
 	var plasmids []*Plasmid
 
+	// 循环处理
 	for i := range geneInfos {
 		data := geneInfos[i]
 		plasmid := &Plasmid{
@@ -92,7 +93,7 @@ func main() {
 		plasmid.Update(data, carrierSeq)
 	}
 
-	// output
+	// Write Output
 	for i, p := range plasmids {
 		if p.Note == "" {
 			fmtUtil.Fprintf(FA, ">%s\n%s\n", p.Name, p.Sequence)
