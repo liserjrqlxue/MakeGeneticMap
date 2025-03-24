@@ -50,6 +50,7 @@ var (
 	CreateSheetTitle = []string{
 		"质粒名称",
 		"序列",
+		"备注",
 	}
 )
 
@@ -118,15 +119,18 @@ func main() {
 				data["图谱"] = carrierSeq[:e1end] + data["序列"] + carrierSeq[e2start:]
 				plasmid.Sequence = data["图谱"]
 			} else {
-				log.Fatalf("酶切位置错误:[%d,%d],[%d,%d]", e1start, e1end, e2start, e2end)
 				slog.Info("酶切位置错误", "序号", data["序号"], "e1start", e1start, "e1end", e1end, "e2start", e2start, "e2end", e2end)
+				plasmid.Note = "酶切位置错误"
 			}
 		} else {
 			slog.Info("酶切位置找不到", "序号", data["序号"], "e1start", e1start, "e1end", e1end, "e2start", e2start, "e2end", e2end)
+			plasmid.Note = "酶切位置找不到"
 		}
 	}
 	for i, p := range plasmids {
-		fmtUtil.Fprintf(FA, ">%s\n%s\n", p.Name, p.Sequence)
+		if p.Note == "" {
+			fmtUtil.Fprintf(FA, ">%s\n%s\n", p.Name, p.Sequence)
+		}
 		xlsx.SetSheetRow(CreateSheet, "A"+strconv.Itoa(i+2), &[]string{p.Name, p.Sequence, p.Note})
 	}
 }
