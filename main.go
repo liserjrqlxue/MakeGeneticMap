@@ -127,12 +127,15 @@ func main() {
 			plasmid.Note = "酶切位置找不到"
 		}
 	}
+
+	// output
 	for i, p := range plasmids {
 		if p.Note == "" {
 			fmtUtil.Fprintf(FA, ">%s\n%s\n", p.Name, p.Sequence)
 		}
 		xlsx.SetSheetRow(CreateSheet, "A"+strconv.Itoa(i+2), &[]string{p.Name, p.Sequence, p.Note})
 	}
+	simpleUtil.CheckErr(xlsx.SaveAs(*output + ".xlsx"))
 }
 
 // 读取载体清单 name -> seq
