@@ -1,4 +1,4 @@
-module MakeGeneticMap
+module github.com/liserjrqlxue/MakeGeneticMap
 
 go 1.24.0
 
